@@ -2,6 +2,17 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import gsap from 'gsap';
+import { Howl } from 'howler';
+import * as CANNON from 'cannon-es';
+
+/*
+var sound = new Howl({
+  src: ['river-noise-bird-374534.mp3']
+});
+
+sound.play();
+sound.loop(true);
+*/
 
 const scene = new THREE.Scene();
 const raycaster = new THREE.Raycaster();
@@ -10,7 +21,7 @@ const pointer = new THREE.Vector2();
 const canvas = document.getElementById('experience-canvas');
 const sizes = {
   width: window.innerWidth,
-  height: window.innerHeight
+  height: window.innerHeight,
 }
 
 const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
@@ -28,6 +39,14 @@ let car = {
   moveDuration: 0.2,
 };
 
+
+function showModal(id) {
+}
+
+function hideModal() {
+}
+
+let intersectObject = "";
 const intersectObjects = [];
 const intersectObjectsNames = [
   "billboard1",
@@ -38,15 +57,15 @@ const intersectObjectsNames = [
 
 const Loader = new GLTFLoader();
 Loader.load(
-  "/new-model.glb",
+  "/Working-Model.glb",
   function (glb) {
     glb.scene.traverse((child) => {
-      if (intersectObjectsNames.includes(child.name)) {
-        intersectObjects.push(child);
-      }
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
+        if (intersectObjectsNames.includes(child.name)) {
+          intersectObjects.push(child);
+        }
       }
       if (child.name === "Body") {
         car.instance = child;
@@ -66,13 +85,7 @@ moon.position.set(0, 50, -100);
 moon.shadow.mapSize.width = 4096;
 moon.shadow.mapSize.height = 4096;
 moon.shadow.normalBias = 0.1;
-moon.shadow.camera.left = -20
-moon.shadow.camera.right = 20
-moon.shadow.camera.bottom = -10
 scene.add(moon);
-
-const shadowHelper = new THREE.CameraHelper(moon.shadow.camera);
-scene.add(shadowHelper)
 
 const billboardLight1 = new THREE.PointLight(0xffffff, 3, 100);
 billboardLight1.position.set(0.735, 3.74, 0.114);
@@ -135,6 +148,8 @@ function onPointerMove(event) {
 }
 
 function onClick(event) {
+  if (intersectObject) {
+  }
 }
 
 function moveCar(targetPosition, cameraPosition) {
@@ -191,8 +206,16 @@ function animate() {
   // calculate objects intersecting the picking ray
   const intersects = raycaster.intersectObjects(intersectObjects, true);
 
+  for (let i = 0; i < intersects.length; i++) {
+    intersectObject = intersects[0].object.parent.name;
+  }
   // cursor feedback
-  document.body.style.cursor = intersects.length ? 'pointer' : 'default';
+  if (intersects.length > 0) {
+    document.body.style.cursor = 'pointer';
+  } else {
+    document.body.style.cursor = 'default';
+    intersectObject = "";
+  }
 
   // track which objects are hovered this frame
   const hovered = new Set();
@@ -208,7 +231,7 @@ function animate() {
     hovered.add(obj);
 
     if (!obj.userData.edgeOutline && obj.geometry) {
-      const edgesGeom = new THREE.EdgesGeometry(obj.geometry, /* thresholdAngle */ 15);
+      const edgesGeom = new THREE.EdgesGeometry(obj.geometry, 1);
       const edgesMat = new THREE.LineBasicMaterial({
         color: 0xffff00,
         depthTest: false,     // keep edges visible on top of the mesh
